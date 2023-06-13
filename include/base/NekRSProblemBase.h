@@ -311,6 +311,12 @@ protected:
   /// Reference isobaric specific heat capacity
   const Real & _Cp_0;
 
+    /// If Nek is being run with fixed point iterations
+  bool _fp_iteration; 
+
+  /// Postprocessor containing the iteration number of the main application, not sure if this should go here since it isnt a member variable
+  //const PostprocessorValue * iter = nullptr;
+
   /**
    * Whether to disable output file writing by NekRS and replace it by output
    * file writing in Cardinal. Suppose the case name is 'channel'. If this parameter

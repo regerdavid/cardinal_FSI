@@ -102,6 +102,8 @@ NekRSProblemBase::validParams()
     "is mapped to/receives data from the mesh mirror for every time step.");
   params.addParam<unsigned int>("constant_interval", 1,
     "Constant interval (in units of number of time steps) with which to synchronize the NekRS solution");
+  params.addParam<bool>("fixed_point_iterations",false,"Whether or not fixed point iterations will be used. Cardinal will look for a Postprocessor called "
+  " 'fp_iteration' that receives the current iteration number from the top-level application.");
   return params;
 }
 
@@ -115,6 +117,7 @@ NekRSProblemBase::NekRSProblemBase(const InputParameters & params)
     _L_ref(getParam<Real>("L_ref")),
     _rho_0(getParam<Real>("rho_0")),
     _Cp_0(getParam<Real>("Cp_0")),
+    _fp_iteration(getParam<bool>("fixed_point_iterations")),
     _write_fld_files(getParam<bool>("write_fld_files")),
     _disable_fld_file_output(getParam<bool>("disable_fld_file_output")),
     _n_usrwrk_slots(getParam<unsigned int>("n_usrwrk_slots")),
@@ -534,7 +537,6 @@ NekRSProblemBase::externalSolve()
     return;
 
   const double timeStartStep = MPI_Wtime();
-
   // _dt reflects the time step that MOOSE wants Nek to
   // take. For instance, if Nek is controlled by a master app and subcycling is used,
   // Nek must advance to the time interval taken by the master app. If the time step
@@ -564,9 +566,30 @@ NekRSProblemBase::externalSolve()
 
   // Run a nekRS time step. After the time step, this also calls UDF_ExecuteStep,
   // evaluated at (step_end_time, _t_step) == (nek_step_start_time + nek_dt, t_step)
+  if(_fp_iteration)
+  {
+    const PostprocessorValue * iter = &getPostprocessorValueByName("fp_iteration");
+    std::cout << "Current fixed point iteration number read in NekRSProblemBase is " << *iter << std::endl; //JUST FOR TESTING 
+    if (*iter == 1) //DR 4/17 note, this might need to be changed to == 0, I'm not 100% if the iteration count is 1 or 0 indexed
+    {
+      nekrs::updateDT(_timestepper->nondimensionalDT(_dt),_t_step);
+      nekrs::initStep(_timestepper->nondimensionalDT(step_start_time),
+                 _timestepper->nondimensionalDT(_dt),
+                 _t_step);
+    }
+      nekrs::runSingleStage(_timestepper->nondimensionalDT(step_start_time),
+                 _timestepper->nondimensionalDT(_dt),
+                 _t_step, *iter);
+      nekrs::postStep(_timestepper->nondimensionalDT(step_start_time),
+                 _timestepper->nondimensionalDT(_dt),
+                 _t_step, *iter);
+  }
+  else
+  {
   nekrs::runStep(_timestepper->nondimensionalDT(step_start_time),
                  _timestepper->nondimensionalDT(_dt),
                  _t_step);
+  }
 
   // optional entry point to adjust the recently-computed NekRS solution
   adjustNekSolution();
