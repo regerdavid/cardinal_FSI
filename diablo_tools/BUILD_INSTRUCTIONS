@@ -1,0 +1,79 @@
+INSTRUCTIONS FOR BUILD DIABLO/CARDINAL ON QUARTZ
+
+1. Clone cardinal from my fork:
+
+git clone https://github.com/regerdavid/cardinal_FSI.git
+git checkout -b cardinal_diablo
+cd cardinal
+
+2. Fetch the dependencies for cardinal:
+./scripts/get-dependencies.sh
+export ENABLE_OPENMC=false
+
+3. Replace the moose petsc options with the custom ones:
+cp diablo_tools/configure_petsc.sh contrib/moose/scripts/
+
+4. Run the usual MOOSE petsc and libmesh scripts
+note: can export the JOBS=# variable in your environment to make this multithreaded. Highly recommended, as libmesh takes forever
+./contrib/moose/scripts/update_and_rebuild_petsc.sh
+./contrib/moose/scripts/update_and_rebuild_libmesh.sh
+
+5. Add the following snippet to line 374 of contrib/moose/framework/src/executioners/FixedPointSolve.C
+(this hopefully eventually wont be necessary if I can get a change merged into MOOSE)
+_problem.execute(EXEC_CUSTOM);
+
+6. Get the diablo folder and put in into contrib/diablo
+(not exact instructions, but something like this:)
+mkdir contrib/diablo/
+cd contrib/diablo
+tar -vxf cardinal_diablo_July2023.tar
+
+the file structure should have something like contrib/diablo/Source, etc.
+
+7. Create symlink directory that links to the diablo libraries
+(do this from anywhere (i think), such as in the top-level cardinal directory).
+I'm not entirely sure why we do this, but apparently its for some historical diablo
+compilation reason.
+
+mkdir diablo_libs
+ln -s /contrib/diablo/toss_4_x86_64_ib_small/gcc12.1.1/opt/ opt
+ln -s /contrib/diablo/toss_4_x86_64_ib_small/gcc12.1.1/opt/ debug 
+
+8. In contrib/diablo/Build/diablo_build_env_toss_4_x86_64_ib.sh.gcc12.1.1
+Update lines 19 and 20 to point to the directory that you made in step 6 and the moose petsc
+directory respectively
+
+9. Build Diablo (pray for no error)
+cd contrib/diablo/Build/
+./Buildgcc12.1.1_mvapich2debug_new.sh
+note: I seem to remember having to run the above command twice because of something weird in the build script
+
+10. Copy the Makefile from this folder to the top-level Cardinal directory
+cp Makefile ../
+
+11. Run make (pray at least 3X for no error)
+(from top-level cardinal directory)
+make -j 8 
+(or however many threads you want above)
+
+12. To test, try the diablo_stress02 case in this folder:
+
+../../cardinal-opt -i diablo_master.i
+(will have to set axeflag=true in diablo_master.i for the first run, then set it to false and run a second time)
+
+EXTRA INFORMATION -------------------------------------------------------------------------------
+
+What I have in my .bashrc (some of these are obviously hardcoded to my files, but make sure that you have the right paths set:
+export WSMPLICPATH=/collab/usr/gapps/mdg/toss_4_x86_64_ib/lic
+stty erase ^?
+
+export NEKRS_HOME=/usr/workspace/reger1/cardinal/install
+alias scons=/g/g20/reger1/jerome_scons/scons.py
+module load cmake python gcc/12.1.1 mvapich2/2.3.7
+
+export CC=mpicc
+export CXX=mpicxx
+export FC=mpif90
+
+export ENABLE_OPENMC=false
+

@@ -26,6 +26,10 @@
 #include "NekSyntax.h"
 #endif
 
+#ifdef ENABLE_DIABLO_COUPLING
+#include "DiabloSyntax.h"
+#endif
+
 #ifdef ENABLE_BISON_COUPLING
 #include "BisonApp.h"
 #endif
@@ -74,7 +78,7 @@ CardinalApp::validParams()
 
 CardinalApp::CardinalApp(InputParameters parameters) : MooseApp(parameters)
 {
-  ModulesApp::registerAllObjects<CardinalApp>(_factory, _action_factory, _syntax);
+  ModulesApp::registerAll(_factory, _action_factory, _syntax);
   CardinalApp::registerAll(_factory, _action_factory, _syntax);
 
 #ifdef ENABLE_BISON_COUPLING
@@ -117,6 +121,10 @@ CardinalApp::registerAll(Factory & f, ActionFactory & af, Syntax & s)
   /* register custom execute flags, action syntax, etc. here */
 #ifdef ENABLE_NEK_COUPLING
   Nek::associateSyntax(s, af);
+#endif
+
+#ifdef ENABLE_DIABLO_COUPLING
+  Diablo::associateSyntax(s, af);
 #endif
 
   associateSyntaxInner(s, af);

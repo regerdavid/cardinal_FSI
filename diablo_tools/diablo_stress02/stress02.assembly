@@ -1,0 +1,130 @@
+
+$-------------------------------------------------------------------------------
+
+#start_assembly
+
+  #assembly_title "Cook's membrane for material type 2 test, using Diablo-centric input, should be the same as stress02 otherwise, stress material 2 test, NIKE3D format"
+  #verbosity 2
+
+  #start_subassembly
+    #subassembly_file stress02.subassembly
+  #end_subassembly
+
+#end_assembly
+
+$-------------------------------------------------------------------------------
+
+#start_mechanics
+
+  #active_mechanics STRESS
+  #max_num_mechanics_iters 10
+
+#end_mechanics
+
+$-------------------------------------------------------------------------------
+
+#start_time_step
+
+  #analysis_type STATIC
+  #time_step_selection FIXED
+  #start_time 0 
+  #end_time 2
+  #initial_time_step 1.000E+00
+  #max_num_time_steps 2
+
+  #start_mechanics_integration
+    #mechanics_name STRESS
+    #time_integrator NEWMARK
+    #beta 2.500E-01
+    #gamma 5.000E-01
+    #initial_acceleration F
+  #end_mechanics_integration
+
+#end_time_step
+
+$-------------------------------------------------------------------------------
+
+#start_nonlinear_solution
+
+  #start_mechanics_solution
+    #mechanics_name STRESS
+    #nonlinear_solver FULL_NEWTON
+    #linesearch_flag .FALSE.
+    #iter_reform_interval 10
+    #increment_rel_tol 0.001
+    #energy_rel_tol 0.01
+    #residual_rel_tol 10000000000
+    #verbose_flag 2
+    #max_num_iters 150 
+  #end_mechanics_solution
+
+#end_nonlinear_solution
+
+
+$-------------------------------------------------------------------------------
+
+#start_linear_solver
+
+  #start_mechanics_linear_solver
+    #mechanics_name STRESS
+    #linear_solver WSMP  $ default value
+  #end_mechanics_linear_solver
+
+#end_linear_solver
+
+$-------------------------------------------------------------------------------
+
+#start_scaling_function
+
+  #scaling_function_title "Nike load curve label 1"
+  #scaling_function_label 1
+
+  #start_linear_function
+     0.0000000d+00  0.0000000d+00
+     1.0000000d+00  1.0000000d-01
+  #end_linear_function
+
+#end_scaling_function
+
+
+$-------------------------------------------------------------------------------
+
+#start_material
+
+  #material_label 1
+  #material_title "elastic material"
+  #ref_density 1.0000E-03
+
+  #start_stress_material
+   #stress_material_title "Diablo stress material type 2"
+   #start_stress_material_2
+$    #linear_kinematics true
+    #start_nike3d_material_block
+ 7.000E+01 9.000E+01 6.000E+01 1.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00
+ 2.500E-01 3.500E-01 2.000E-01 0.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00
+ 2.800E+01 3.800E+01 2.200E+01 0.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00
+ 0.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00
+ 1.000E+00 4.000E+00 5.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00
+ 0.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00 0.000E+00
+    #end_nike3d_material_block
+   #end_stress_material_2
+  #end_stress_material
+
+#end_material
+
+
+$-------------------------------------------------------------------------------
+
+#start_restart_output
+ #restart_output_frequency 1
+ #num_restart_files 4
+ #num_save_restart_states 2
+#end_restart_output
+
+$-------------------------------------------------------------------------------
+
+#start_vis_output
+
+  #vis_file_types MILI  $ default value
+
+#end_vis_output
