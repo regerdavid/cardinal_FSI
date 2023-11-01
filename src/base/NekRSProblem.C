@@ -117,12 +117,9 @@ NekRSProblem::NekRSProblem(const InputParameters & params)
     _usrwrk_indices.push_back("mesh_velocity_x");
     _usrwrk_indices.push_back("mesh_velocity_y");
     _usrwrk_indices.push_back("mesh_velocity_z");
-    indices.tr_x = start++ * nekrs::scalarFieldOffset();
-    indices.tr_y = start++ * nekrs::scalarFieldOffset();
-    indices.tr_z = start++ * nekrs::scalarFieldOffset();
-    _usrwrk_indices.push_back("tr_x");
-    _usrwrk_indices.push_back("tr_y");
-    _usrwrk_indices.push_back("tr_z");
+//    indices.tr_x = start++ * nekrs::scalarFieldOffset();
+//    indices.tr_y = start++ * nekrs::scalarFieldOffset();
+//    indices.tr_z = start++ * nekrs::scalarFieldOffset();
     if (_calc_filtered_velocity)
     {
       indices.filtered_velocity_x = start++ * nekrs::scalarFieldOffset();
@@ -132,7 +129,10 @@ NekRSProblem::NekRSProblem(const InputParameters & params)
       _usrwrk_indices.push_back("filtered_velocity_y");
       _usrwrk_indices.push_back("filtered_velocity_z");
     }
-    
+    _usrwrk_indices.push_back("tr_x");
+    _usrwrk_indices.push_back("tr_y");
+    _usrwrk_indices.push_back("tr_z");
+ 
   }
 
   _minimum_scratch_size_for_coupling = _usrwrk_indices.size() - _first_reserved_usrwrk_slot;
