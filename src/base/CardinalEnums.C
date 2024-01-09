@@ -50,6 +50,14 @@ getNekFieldEnum()
 }
 
 MooseEnum
+getDiabloFieldEnum()
+{
+  return MooseEnum(
+      "disp_x disp_y disp_z vel_x vel_y vel_z testing");
+}
+
+
+MooseEnum
 getOperationEnum()
 {
   return MooseEnum("max min", "max");

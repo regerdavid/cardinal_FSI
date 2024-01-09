@@ -25,6 +25,7 @@ MooseEnum getSynchronizationEnum();
 MooseEnum getNekOrderEnum();
 MooseEnum getBinnedVelocityComponentEnum();
 MooseEnum getNekFieldEnum();
+MooseEnum getDiabloFieldEnum();
 MooseEnum getOperationEnum();
 MooseEnum getTallyTypeEnum();
 MooseEnum getTallyEstimatorEnum();
@@ -100,6 +101,18 @@ enum NekFieldEnum
   unity
 };
 
+/// Enumeration of possible fields to read from diablo
+enum DiabloFieldEnum
+{
+  disp_x,
+  disp_y,
+  disp_z,
+  vel_x,
+  vel_y,
+  vel_z,
+  testing
+};
+
 /// Enumeration of possible fields to write in nekRS
 enum NekWriteEnum
 {
@@ -111,6 +124,14 @@ enum NekWriteEnum
   mesh_velocity_x,
   mesh_velocity_y,
   mesh_velocity_z
+};
+
+enum DiabloWriteEnum
+{
+  pres,
+  tr_x,
+  tr_y,
+  tr_z
 };
 } // namespace field
 
