@@ -1,0 +1,158 @@
+#start_assembly
+  $distance=inches mass=slinch (=slug/32.2=lbm/386.4) pressure=psi
+  #units METRIC
+  #verbosity 2
+  #assembly_title global
+  #default_exodus_file 'Solid_Osc_V0_Modified.exo'
+  #start_subassembly
+    #subassembly_file OcylV0.subassembly
+  #end_subassembly
+
+#end_assembly
+
+#start_mechanics
+  #active_mechanics STRESS
+#end_mechanics
+
+#start_vis_output
+  #vis_file_types MILI
+  #vis_print_frequency 10
+#end_vis_output
+
+#start_restart_output
+  #restart_output_frequency 10
+  #num_restart_files 16
+#end_restart_output
+
+#start_partition
+  #partitioner chomp
+#end_partition
+
+#start_time_step
+  #start_mechanics_integration
+    #mechanics_name STRESS
+    #time_integrator NEWMARK
+    #predictor CONSTVEL
+    #beta 0.25
+    #gamma 0.5
+    #initial_acceleration .TRUE.
+  #end_mechanics_integration
+
+  #start_mechanics_time_step
+    #mechanics_name STRESS
+    #max_num_nonlinear_iters 80
+  #end_mechanics_time_step
+
+  #analysis_type DYNAMIC
+ $#analysis_type STATIC 
+  #time_step_selection FIXED
+  #initial_time_step 1.0e-1
+  #start_time 0.0
+  #end_time   60.0
+  #max_num_time_steps 600
+  #time_format_large_flag .TRUE.
+#end_time_step
+
+#start_nonlinear_solution
+  #start_mechanics_solution
+    #mechanics_name STRESS
+   $#nonlinear_solver BFGS
+   $#nonlinear_solver BROYDEN
+    #nonlinear_solver FULL_NEWTON
+    #iter_reform_interval 1
+    #residual_rel_tol 1.0e-6
+    #energy_rel_tol 1.0e-3
+    #increment_rel_tol 1.0e-8
+    #linesearch_flag .FALSE.
+    #linesearch_max_iter 10
+    #verbose_flag 7
+    #use_max_value .TRUE.
+    #max_num_iters 500
+    #and_norm_flag .FALSE.
+  #end_mechanics_solution
+
+#end_nonlinear_solution
+
+#start_linear_solver
+  #start_mechanics_linear_solver
+    #mechanics_name STRESS
+   #linear_solver WSMP
+   $#linear_solver MUMPS
+   $#linear_solver HYPRE
+   $#hypre_package GMRES
+   $#hypre_preconditioner BOOMER
+   $#wsmp_num_threads 2
+  #end_mechanics_linear_solver
+
+#end_linear_solver
+
+#start_scaling_function
+  #scaling_function_title 'load curve for gravity - quasi-static test'
+  #scaling_function_label 1
+  #start_linear_function 
+      0.0  1.0
+     56.3  1.0 $this is where the problem actually starts running
+     56.4  1.0
+     56.5  0.0
+    1.0e6  0.0
+  #end_linear_function
+#end_scaling_function
+
+#start_scaling_function
+  #scaling_function_title 'load curve for point load - quasi-static test'
+  #scaling_function_label 2
+  #start_linear_function 
+      0.0  0.0
+      1.0  0.0
+  #end_linear_function
+#end_scaling_function
+
+$See Section 4.2, Table 8 CSM Tests
+#start_basemotion
+  #y_flag .TRUE.
+  #y_factor 0.00 $Acceleration of gravity
+  #y_load_curve_label 1
+#end_basemotion
+
+#start_material
+  #material_title 'Massless Elastic Ball'
+  #material_label 1
+ 
+ #ref_density 10.0 $kg/m^3
+  #start_stress_material
+   #stress_material_title "Linear Elastic Ball, nu=0.3'
+   #start_stress_material_1
+    #e 1.0e3 $N/m^2
+    #nu 0.4999
+    #linear_flag .TRUE.
+   #end_stress_material_1
+ #end_stress_material
+
+#end_material
+
+#start_material
+  #material_title 'Spring'
+  #material_label 2
+ 
+ #ref_density 0.000 $massless spring
+  #start_stress_material
+   #stress_material_title "massless spring, length=0.5, A=0.5,K=(2*pi*fb)^2,fb=0.167"
+   #start_stress_material_1
+    $density of cylinder 10.0 
+    $width of cylinder 3.0
+    $radius of cylinder = 0.5
+    $mass of the cylinder = 3*10*pi/4.0 M = 23.5619
+    $want natural frequency f=0.167
+    $ so w = 1.0492919462989909416465228900154
+    $ so w^2 = K/M = 1.1010135885679244900827004779822
+    $Stiffness K = 25.94195 
+    $total area of springs = 0.5=(0.25+0.125+0.125) 
+    $length of spring = 0.5 
+    $so K = E*A/L = E
+    #e 25.94195
+    #nu 0.0
+    #linear_flag .TRUE.
+   #end_stress_material_1
+ #end_stress_material
+
+#end_material

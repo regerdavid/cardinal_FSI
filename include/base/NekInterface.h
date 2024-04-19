@@ -286,6 +286,9 @@ double Pr();
 /// Copy the deformation from host to device
 void copyDeformationToDevice();
 
+/// Copy traction from o_usrwrk for fluid-to-solid FSI coupling/traction transfer
+void copyTractionFromDevice(const unsigned int slots_reserved_by_cardinal);
+
 template <typename T>
 void allgatherv(const std::vector<int> & base_counts,
                 const T * input,
@@ -693,6 +696,24 @@ struct usrwrkIndices
   /// z-velocity of moving boundary (for mesh elasticity)
   int filtered_velocity_z;
 
+  /// Diagonal component of traction matrix (for fluid-to-solid FSI)
+  int s11;
+
+  /// Diagonal component of traction matrix (for fluid-to-solid FSI)
+  int s22;
+
+  /// Diagonal component of traction matrix (for fluid-to-solid FSI)
+  int s33;
+
+  /// Off-Diagonal component of traction matrix (for fluid-to-solid FSI)
+  int s12;
+
+  /// Off-Diagonal component of traction matrix (for fluid-to-solid FSI)
+  int s13;
+
+  /// Off-Diagonal component of traction matrix (for fluid-to-solid FSI)
+  int s23;
+
   /// boundary velocity (for separate domain coupling)
   int boundary_velocity;
 
@@ -772,6 +793,53 @@ double scalar02(const int id);
  */
 double scalar03(const int id);
 
+/**
+ *\brief Get tr_11 (traction_11) at given GLL index from usrwrk
+ *
+ * @param[in] id GLL index
+ * @return s11 value at index
+ */
+double s11(const int id);
+
+/**
+ *\brief Get s22 (traction_22) at given GLL index from usrwrk
+ *
+ *@param[in] id GLL index
+ *@return tr_y value at index
+ */
+double s22(const int id);
+
+/**
+ *\brief Get s33 (traction_33) at given GLL index from usrwrk
+ *
+ *@param[in] id GLL index
+ *@return s33 value at index
+ */
+double s33(const int id);
+
+/**
+ *\brief Get tr_12 (traction_12) at given GLL index from usrwrk
+ *
+ * @param[in] id GLL index
+ * @return s12 value at index
+ */
+double s12(const int id);
+
+/**
+ *\brief Get tr_13 (traction_13) at given GLL index from usrwrk
+ *
+ *@param[in] id GLL index
+ *@return s13 value at index
+ */
+double s13(const int id);
+
+/**
+ *\brief Get s23 (traction_23) at given GLL index from usrwrk
+ *
+ *@param[in] id GLL index
+ *@return s23 value at index
+ */
+double s23(const int id);
 /**
  * \brief Get the temperature solution at given GLL index
  *

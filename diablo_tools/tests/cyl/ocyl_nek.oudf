@@ -1,0 +1,39 @@
+void velocityDirichletConditions(bcData *bc)
+{
+  if (bc->id==1)
+  {
+    bc->u = 1.0;
+    bc->v = 0.0;
+    bc->w = 0.0;
+  }
+  else
+  {
+    bc->u = bc->usrwrk[bc->idM + 1*bc->fieldOffset];
+    bc->v = bc->usrwrk[bc->idM + 2*bc->fieldOffset];
+    bc->w = bc->usrwrk[bc->idM + 3*bc->fieldOffset];
+
+  }
+}
+
+void pressureDirichletConditions(bcData *bc)
+{
+  //const dfloat iU0delta = 20.0;
+  //const dfloat un = bc->u*bc->nx + bc->v*bc->ny + bc->w*bc->nz;
+  //const dfloat s0 = 0.5 * (1.0 - tanh(un*iU0delta));
+  //bc->p = 1.0-0.5 * (bc->u*bc->u + bc->v*bc->v + bc->w*bc->w) * s0;
+  bc->p = 1.0;
+}
+
+void meshVelocityDirichletConditions(bcData *bc)
+{
+  if(bc->id==2)
+  {
+    //bc->meshu = 0.0;
+    //bc->meshv = 0.0;
+    //bc->meshw = 0.0;
+    bc->meshu = bc->usrwrk[bc->idM + 1*bc->fieldOffset];
+    bc->meshv = bc->usrwrk[bc->idM + 2*bc->fieldOffset];
+    bc->meshw = bc->usrwrk[bc->idM + 3*bc->fieldOffset];
+  }
+}
+

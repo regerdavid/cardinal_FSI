@@ -18,8 +18,8 @@ DiabloInitAction::validParams()
       "casename",
       "Case name for the NekRS input files; "
       "this is <case> in <case>.par, <case>.udf, <case>.oudf, and <case>.re2.");
-  params.addRequiredParam<bool>(
-      "axeflag",
+  params.addParam<bool>(
+      "axeflag",false,
       "Whether or not to run axe");
       
   return params;

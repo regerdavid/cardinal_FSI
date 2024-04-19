@@ -637,6 +637,22 @@ initializeHostMeshParameters()
 }
 
 void
+copyTractionFromDevice(const unsigned int slots_reserved_by_cardinal)
+{
+  if (slots_reserved_by_cardinal > 0)
+  {
+    nrs_t * nrs = (nrs_t *)nrsPtr();
+    nrs->o_usrwrk.copyTo(nrs->usrwrk,scalarFieldOffset() * sizeof(dfloat), indices.s11);
+    nrs->o_usrwrk.copyTo(nrs->usrwrk,scalarFieldOffset() * sizeof(dfloat), indices.s22);
+    nrs->o_usrwrk.copyTo(nrs->usrwrk,scalarFieldOffset() * sizeof(dfloat), indices.s33);
+    nrs->o_usrwrk.copyTo(nrs->usrwrk,scalarFieldOffset() * sizeof(dfloat), indices.s12);
+    nrs->o_usrwrk.copyTo(nrs->usrwrk,scalarFieldOffset() * sizeof(dfloat), indices.s13);
+    nrs->o_usrwrk.copyTo(nrs->usrwrk,scalarFieldOffset() * sizeof(dfloat), indices.s23);
+  }
+}
+
+
+void
 updateHostMeshParameters()
 {
   mesh_t * mesh = entireMesh();
@@ -1390,6 +1406,60 @@ scalar03(const int id)
   return nrs->cds->S[id + 3 * scalarFieldOffset()];
 }
 
+
+double
+s11(const int id)
+{
+//  nrs_t * nrs = (nrs_t *)nrsPtr();
+//  nrs->usrwrk[indices.tr_x + id] = value;
+  double * tr = (double *) nek::scPtr(4);
+  return tr[indices.s11 + id];
+}
+
+double
+s22(const int id)
+{
+//  nrs_t * nrs = (nrs_t *)nrsPtr();
+//  nrs->usrwrk[indices.tr_y + id] = value;
+  double * tr = (double *) nek::scPtr(5);
+  return tr[indices.s22 + id];
+}
+
+double
+s33(const int id)
+{
+//  nrs_t * nrs = (nrs_t *)nrsPtr();
+//  nrs->usrwrk[indices.tr_z + id] = value;
+  double * tr = (double *) nek::scPtr(6);
+  return tr[indices.s33 + id];
+}
+double
+s12(const int id)
+{
+//  nrs_t * nrs = (nrs_t *)nrsPtr();
+//  nrs->usrwrk[indices.tr_x + id] = value;
+  double * tr = (double *) nek::scPtr(7);
+  return tr[indices.s12 + id];
+}
+
+double
+s13(const int id)
+{
+//  nrs_t * nrs = (nrs_t *)nrsPtr();
+//  nrs->usrwrk[indices.tr_y + id] = value;
+  double * tr = (double *) nek::scPtr(8);
+  return tr[indices.s13 + id];
+}
+
+double
+s23(const int id)
+{
+//  nrs_t * nrs = (nrs_t *)nrsPtr();
+//  nrs->usrwrk[indices.tr_z + id] = value;
+  double * tr = (double *) nek::scPtr(9);
+  return tr[indices.s23 + id];
+}
+
 double
 temperature(const int id)
 {
@@ -1547,6 +1617,30 @@ double (*solutionPointer(const field::NekFieldEnum & field))(int)
                    "because your Nek case files do not have a scalar03 variable!");
       f = &scalar03;
       break;
+    case field::s11:
+// TODO: add some check for fluid-to-solid FSI coupling     if (!hasScalarVariable(3))
+ //        mooseError("Cardinal cannot find 'scalar03' "
+ //                   "because your Nek case files do not have a scalar03 variable!");
+      f = &s11;
+      break;
+    case field::s22:
+      f = &s22;
+      break;
+    case field::s33:
+      f = &s33;
+      break;
+    case field::s12:
+// TODO: add some check for fluid-to-solid FSI coupling     if (!hasScalarVariable(3))
+ //        mooseError("Cardinal cannot find 'scalar03' "
+ //                   "because your Nek case files do not have a scalar03 variable!");
+      f = &s12;
+      break;
+    case field::s13:
+      f = &s13;
+      break;
+    case field::s23:
+      f = &s23;
+      break;
     case field::unity:
       f = &unity;
       break;
@@ -1682,6 +1776,24 @@ dimensionalize(const field::NekFieldEnum & field, double & value)
       break;
     case field::scalar03:
       // no dimensionalization needed
+      break;
+    case field::s11:
+      // TODO: add dimensionalisation for traction, commonly rho * U^2
+      break;
+    case field::s22:
+      // TODO: add dimensionalisation for traction, commonly rho * U^2
+      break;
+    case field::s33:
+      // TODO: add dimensionalisation for traction, commonly rho * U^2
+      break;
+    case field::s12:
+      // TODO: add dimensionalisation for traction, commonly rho * U^2
+      break;
+    case field::s13:
+      // TODO: add dimensionalisation for traction, commonly rho * U^2
+      break;
+    case field::s23:
+      // TODO: add dimensionalisation for traction, commonly rho * U^2
       break;
     case field::unity:
       // no dimensionalization needed

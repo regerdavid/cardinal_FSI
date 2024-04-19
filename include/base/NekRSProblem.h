@@ -221,6 +221,9 @@ protected:
   /// Postprocessor to limit the maximum temperature
   const PostprocessorValue * _max_T = nullptr;
 
+  /// Postprocessor to get the fixed point iteration number
+  const PostprocessorValue * _iter = nullptr;
+
   /// nekRS temperature interpolated onto the data transfer mesh
   double * _T = nullptr;
 
@@ -264,4 +267,6 @@ protected:
   unsigned int _heat_source_var;
 
   const Real & _initial_mesh_vel;
+
+  const bool & _calc_filtered_velocity;
 };

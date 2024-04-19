@@ -57,24 +57,25 @@ DiabloMesh::buildMesh()
     int ierr;
     _n_vertices_per_elem = 4; //Hard coded for quad element currently
     _new_elem = &DiabloMesh::boundaryElem;
-    int node_index[4] ={0,1,3,2};
+    int node_index[4] ={0,1,2,3};
+    int components_per_point = 3; 
+     //Translate between how libmesh orders quad nodes and how diablo orders quad nodes
     //_elem_processor_id = &DiabloMesh::boundaryElemProcessorID;
 
     //DiabloMesh::buildDummyMesh(); //This can be commented out once I get an actual working mesh mirror
     ierr = Diablo_Get_Num_NodeIds(&_numNodeIds,&_neumann_set,&ivar); //Retrieve the number of vertexes in the specified neumann set
-    std::cout<<"NumNodeIds is " << _numNodeIds <<std::endl;
-    _numElems = (_numNodeIds-2)/2; //THIS MAY NOT BE TRUE FOR ALL ELEMENT TYPES (OR CORRECT AT ALL)
-
+    //std::cout<<"NumNodeIds is " << _numNodeIds <<std::endl;
+    //_numElems = (_numNodeIds-2)/2; //This was for the stress02 example that ordered everything by single points intead of (point[1:4],face)
+    _numElems = _numNodeIds/4;
     double *nodeCoords;
-    nodeCoords = new double[3*_numNodeIds];
+    nodeCoords = new double[components_per_point*_numNodeIds];
 
     ierr = Diablo_Transfer_Out(nodeCoords,&_neumann_set,&ivar); //Retrieve the coordinates of the vertexes in the neumann set
 
-/*    for (int count =0; count<3*_numNodeIds;count+=3)
+   /* for (int count =0; count<3*_numNodeIds;count+=3)
     {
       std::cout<<"Coords: " << nodeCoords[count] << "," << nodeCoords[count+1] << "," << nodeCoords[count+2]<<std::endl;
     } */
-
     for (int e = 0; e < _numElems; e++)
     {
       auto elem = (this->*_new_elem)();
@@ -84,8 +85,11 @@ DiabloMesh::buildMesh()
 
       for (int n = 0; n < _n_vertices_per_elem; n++)
       {
-        int node = (e * 6) + node_index[n]*3;
-        Point p(nodeCoords[node], nodeCoords[node+1], nodeCoords[node+2]);
+        //int node_start = (e * components_per_point*_n_vertices_per_elem/2) + node_index[n]*components_per_point; //Old one for the stress02 example
+        int node_start = (e*4*components_per_point)+node_index[n]*components_per_point;
+        
+        Point p(nodeCoords[node_start], nodeCoords[node_start+1], nodeCoords[node_start+2]);
+        
        // p *= _scaling;
 
         auto node_ptr = _mesh->add_point(p);

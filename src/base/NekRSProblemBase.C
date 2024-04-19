@@ -70,7 +70,7 @@ NekRSProblemBase::validParams()
   params.addRangeCheckedParam<Real>(
       "Cp_0", 1.0, "Cp_0 > 0.0", "Heat capacity parameter value for non-dimensional solution");
 
-  MultiMooseEnum nek_outputs("temperature pressure velocity scalar01 scalar02 scalar03");
+  MultiMooseEnum nek_outputs("temperature pressure velocity scalar01 scalar02 scalar03 s11 s22 s33 s12 s13 s23");
   params.addParam<MultiMooseEnum>(
       "output", nek_outputs, "Field(s) to output from NekRS onto the mesh mirror");
 
@@ -640,14 +640,15 @@ NekRSProblemBase::externalSolve()
     std::cout << "Current fixed point iteration number read in NekRSProblemBase is " << *iter << std::endl; //JUST FOR TESTING 
     if (*iter == 1)
     {
+      nekrs::finishStep();
       nekrs::initStep(_timestepper->nondimensionalDT(step_start_time),
                   _timestepper->nondimensionalDT(_dt),
                   _t_step);
     }
     bool converged = false;
-    converged = nekrs::runStep(*iter);
+    converged = nekrs::runStep(*iter++);
 
-    nekrs::finishStep();
+//    nekrs::finishStep();
 
   }
   else
@@ -688,7 +689,16 @@ NekRSProblemBase::externalSolve()
 
   if (_is_output_step)
   {
-    writeFieldFile(step_end_time, _t_step);
+    if (_fp_iteration)
+    {
+      const PostprocessorValue * iter = &getPostprocessorValueByName("fp_iteration");
+      if (*iter==1)
+      {
+        writeFieldFile(step_end_time, _t_step);
+      }
+    }
+    else
+      writeFieldFile(step_end_time, _t_step);
 
     // TODO: I could not figure out why this can't be called from the destructor, to
     // add another field file on Cardinal's last time step. Revisit in the future.
@@ -919,6 +929,18 @@ NekRSProblemBase::extractOutputs()
         field_enum = field::scalar02;
       else if (_var_names[i] == "scalar03")
         field_enum = field::scalar03;
+      else if (_var_names[i] == "s11")
+        field_enum = field::s11;
+      else if (_var_names[i] == "s22")
+        field_enum = field::s22;
+      else if (_var_names[i] == "s33")
+        field_enum = field::s33;
+      else if (_var_names[i] == "s12")
+        field_enum = field::s12;
+      else if (_var_names[i] == "s13")
+        field_enum = field::s13;
+      else if (_var_names[i] == "s23")
+        field_enum = field::s23;
       else
         mooseError("Unhandled NekFieldEnum in NekRSProblemBase!");
 
@@ -993,6 +1015,18 @@ NekRSProblemBase::addExternalVariables()
         _var_names.push_back("scalar02");
       else if (output == "scalar03")
         _var_names.push_back("scalar03");
+      else if (output == "s11")
+        _var_names.push_back("s11");
+      else if (output == "s22")
+        _var_names.push_back("s22");
+      else if (output == "s33")
+        _var_names.push_back("s33");
+      else if (output == "s12")
+        _var_names.push_back("s12");
+      else if (output == "s13")
+        _var_names.push_back("s13");
+      else if (output == "s23")
+        _var_names.push_back("s23");
     }
 
     _var_string = "";

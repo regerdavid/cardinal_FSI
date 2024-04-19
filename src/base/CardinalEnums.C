@@ -46,7 +46,7 @@ MooseEnum
 getNekFieldEnum()
 {
   return MooseEnum(
-      "velocity_component velocity_x velocity_y velocity_z velocity temperature pressure scalar01 scalar02 scalar03 unity");
+      "velocity_component velocity_x velocity_y velocity_z velocity temperature pressure scalar01 scalar02 scalar03 s11 s22 s33 s12 s13 s23 unity");
 }
 
 MooseEnum

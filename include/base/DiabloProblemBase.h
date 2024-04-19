@@ -68,6 +68,8 @@ public:
 
     //Neumann Set in Diablo to use for coupling
     const int & _neumann_set;
+
+    const int & _num_steps;
     
     /**
    * Extract user-specified parts of the Diablo solution onto the mesh mirror
