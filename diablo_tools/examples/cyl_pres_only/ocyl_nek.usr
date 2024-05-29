@@ -1,0 +1,273 @@
+c-----------------------------------------------------------------------
+      subroutine userchk
+      include 'SIZE'
+      include 'TOTAL'
+
+      common /nrsscptr/ nrs_scptr(9)
+      integer*8         nrs_scptr
+
+      common /usr_umesh/ umeshx(lx1,ly1,lz1,lelt),
+     & umeshy(lx1,ly1,lz1,lelt),
+     & umeshz(lx1,ly1,lz1,lelt)
+
+      common /old_y/ ym1o(lx1,ly1,lz1,lelt)
+
+      real*8 ydiff(lx1,ly1,lz1,lelt)  
+      real*8 wmin1, wmax1, pmin1, pmax1   
+      integer idir, e, f,trsidesets
+      real unity(lx1,ly1,lz1,lelv)
+
+      real s11(lx1,ly1,lz1,lelv),s22(lx1,ly1,lz1,lelv)
+      real s33(lx1,ly1,lz1,lelv),s12(lx1,ly1,lz1,lelv)
+      real s13(lx1,ly1,lz1,lelv),s23(lx1,ly1,lz1,lelv)
+
+
+      trsidesets=2
+      call sideset_traction(s11,s22,s33,s12,s13,s23,trsidesets,1,1)
+
+    
+      nrs_scptr(4) = loc(s11)
+      nrs_scptr(5) = loc(s22)
+      nrs_scptr(6) = loc(s33)
+      nrs_scptr(7) = loc(s12)
+      nrs_scptr(8) = loc(s13)
+      nrs_scptr(9) = loc(s23)
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine userbc (ix,iy,iz,iside,ieg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+
+      common /usr_vmesh/ vmeshx(lx1,ly1,lz1,lelt),
+     & vmeshy(lx1,ly1,lz1,lelt),
+     & vmeshz(lx1,ly1,lz1,lelt)
+
+      common /usr_umesh1/ umeshy1(lx1,ly1,lz1,lelt)
+
+      integer e,ieg
+      real ucx, ucy, ucz, ucy_e 
+
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine useric (ix,iy,iz,ieg)
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+
+      integer idum, e
+      save    idum
+      data    idum / 0 /
+
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat
+      include 'SIZE'
+      include 'TOTAL'
+
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat2
+      include 'SIZE'
+      include 'TOTAL'
+
+      common /usr_pipe/ pgmask(lelg), pfgmask(lelg),
+     & plmask(lelt), pflmask(lelt), ip_stp, iv_stp
+
+      common /usr_pipe_uvw/ vp_x(lelg,9),
+     & vp_y(lelg,9),vp_z(lelg,9),
+     & vp_p(lelg,9)
+
+      common /usr_bound/ cbc_usr(6,lelt)
+      
+      character*3 cbc_usr       
+
+      real*8 pgmask, pfgmask, plmask, pflmask
+      real*8 vp_x, vp_y, vp_z, vp_p
+      integer ip_stp, iv_istp
+
+      real*8 nwall, npipe, nw_bd1
+      real*8 wtmp
+      real*8 wtmp1(lelg)
+
+      integer e, f, eg, ipipe_mask
+      real*8 xx1, zz1, yy1 
+      real*8 nb1, nb2, nb3, nb4
+
+c      param(66) = 4.   ! These give the std nek binary i/o and are 
+c      param(67) = 4.   ! good default values
+      ifuservp=.false.
+
+c  -4.1176259999999998E-025   2.500000000000000      Xrange
+c  -1.3877790000000000E-017  0.4100000000000000      Yrange
+c  -1.7347230000000000E-018  5.0000000000000003E-002 Zrange
+
+       
+      nw_bd1 = 0.0
+      do e=1,nelt
+      do f=1,6
+
+        cbc_usr(f,e)=cbc(f,e,1)
+      if(cbc(f,e,1).ne.'E  ') then
+c            write(6,*) cbc(f,e,1)
+      endif
+        
+      if(cbc(f,e,1).eq.'SYM') then
+            boundaryID(f,e) = 4
+      elseif(cbc(f,e,1).eq.'O  ') then
+            boundaryID(f,e) = 3
+      elseif(cbc(f,e,1).eq.'v  ') then
+            boundaryID(f,e) = 1
+      elseif(cbc(f,e,1).eq.'W  ') then
+            boundaryID(f,e) = 5
+      elseif(cbc(f,e,1).eq.'mv ') then
+            boundaryID(f,e) = 2
+      endif
+  
+  
+        ipipe_mask=0
+
+        if (cbc(f,e,1).eq.'mv ') then
+           ipipe_mask=1
+           nw_bd1=nw_bd1+1.0
+        endif   
+
+        if (ipipe_mask.eq.1) then
+           eg=lglel(e)
+           npipe=npipe+1.0
+           pgmask(eg)=1.0
+           plmask(e)=1.0
+           pfgmask(eg)=f*1.0
+           pflmask(e)=f*1.0
+        endif
+
+      enddo
+      enddo 
+
+      call  gop(nw_bd1,wtmp,'+  ',1)
+
+      call  gop(pgmask,wtmp1,'+  ',lelg)
+      call  gop(pfgmask,wtmp1,'+  ',lelg)
+
+      if (nid.eq.0) write(6,*)"Test (mv. boundaries):", nw_bd1
+
+      call bcmask  ! Reset masks for velocity and pressure
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat3
+      include 'SIZE'
+      include 'TOTAL'
+c
+      return
+      end
+
+c-----------------------------------------------------------------------
+      subroutine sideset_traction(s11,s22,s33,s12,s13,s23,sslist,
+     &                                                nss,dssopt)
+
+c  tracx, tracy, tracz - traction components
+c  sslist - sideset list, integer array of sidesets where we need traction
+c  nss - number of sidesets i.e. the size of the sslist array
+c  dssopt - direct stiffness sum opt, if dssopt>1, a dsavg on traction is performed
+
+      include 'SIZE'
+      include 'TOTAL'
+
+      integer sslist(1),nss,dssopt
+      real s11(lx1,ly1,lz1,lelv), s22(lx1,ly1,lz1,lelv),
+     $     s33(lx1,ly1,lz1,lelv), s12(lx1,ly1,lz1,lelv),
+     $     s13(lx1,ly1,lz1,lelv), s23(lx1,ly1,lz1,lelv)
+
+      parameter (lxyz=lx1*ly1*lz1)
+
+      real sij(lx1,ly1,lz1,6,lelv),
+     $      tauij(lx1,ly1,lz1,lelv,6),
+     $      ur(lxyz),us(lxyz),ut(lxyz),
+     $      vr(lxyz),vs(lxyz),vt(lxyz),
+     $      wr(lxyz),ws(lxyz),wt(lxyz)
+
+      integer nij,bid,jf1,js1,jskip1,js2,jf2,jskip2
+      integer e,f,i,j1,j2,ia,ntot,j3,j4,ie
+      real ramp,ttol,shape,mdelta,areaf
+      real mask(lx1,ly1,lz1,lelv),ones(lx1,ly1,lz1,lelv)
+
+      nij = 6
+      call comp_sij(sij,nij,vx,vy,vz,ur,us,ut,vr,vs,vt,wr,ws,wt)
+
+      do e=1,nelv
+      do i=1,lxyz
+         tauij(i,1,1,e,1) = sij(i,1,1,1,e)
+         tauij(i,1,1,e,2) = sij(i,1,1,2,e)
+         tauij(i,1,1,e,3) = sij(i,1,1,3,e)
+         tauij(i,1,1,e,4) = sij(i,1,1,4,e)
+         tauij(i,1,1,e,5) = sij(i,1,1,5,e)
+         tauij(i,1,1,e,6) = sij(i,1,1,6,e)
+      enddo
+      enddo
+
+
+c     performing a dssum
+
+      if (dssopt.gt.0) then
+       do i=1,6
+        call dsavg(tauij(1,1,1,1,i))
+       enddo
+      endif
+
+c     multiply with viscosity, assuming constant viscosity
+      call cmult(tauij,cpfld(1,1),lxyz*6*nelv)
+
+c     subtract pressure from diagonal terms
+      do e = 1,nelv
+       do i=1,3
+        call sub2(tauij(1,1,1,e,i),pr(1,1,1,e),lxyz) !Subtract pressure from viscous tractions
+       enddo
+      enddo
+c     set traction to zero except on all boundaries of interest
+
+      ntot = lxyz*nelv
+      call rzero(s11,ntot)
+      call rzero(s22,ntot)
+      call rzero(s33,ntot)
+      call rzero(s12,ntot)
+      call rzero(s13,ntot)
+      call rzero(s23,ntot)
+
+
+      ttol = 1.0E+06
+
+      do e=1,nelv
+       do f=1,2*ndim
+         bid = boundaryID(f,e)
+         do i=1,nss
+          if(bid.eq.sslist(i)) then
+            call facind2(js1,jf1,jskip1,js2,jf2,jskip2,f)
+            ia = 0
+            do j2=js2,jf2,jskip2
+            do j1=js1,jf1,jskip1
+            ia = ia + 1
+            s11(j1,j2,1,e)=tauij(j1,j2,1,e,1)
+            s22(j1,j2,1,e)=tauij(j1,j2,1,e,2)
+            s33(j1,j2,1,e)=tauij(j1,j2,1,e,3)
+            s12(j1,j2,1,e)=tauij(j1,j2,1,e,4)
+            s13(j1,j2,1,e)=tauij(j1,j2,1,e,5)
+            s23(j1,j2,1,e)=tauij(j1,j2,1,e,6)
+             enddo
+            enddo
+          endif
+         enddo
+       enddo
+      enddo
+
+      return
+      end

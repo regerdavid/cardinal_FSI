@@ -69,12 +69,9 @@ DiabloProblemBase::initialSetup()
 void
 DiabloProblemBase::externalSolve()
 {
-
-  //I think _time, _dt, _t_step should be accessible from in here and contain the current target time, current dt, and current step number
-  //DR 7/5, these will presumable need to get declared outside of the external solve function so they dont get reset all the time.
   int ierr;
   int DiabloStepStart=1; //I'm assuming this always starts at 1, not sure if that is actually the case.
-  int kk =_app.getExecutioner()->fixedPointSolve().numFixedPointIts()-1; //Subtracting one between Diablo treats the number as 0-index, while it is 1-index in MOOSE.
+  int kk =_app.getExecutioner()->fixedPointSolve().numFixedPointIts()-1; //Subtracting one as Diablo treats the number as 0-index, while it is 1-index in MOOSE.
   //I have no idea what these do
   char mm_plotfile[ ] = "dblmmplot";
   char sm_plotfile[ ] = "dblsmplot";
@@ -91,6 +88,7 @@ DiabloProblemBase::externalSolve()
 void
 DiabloProblemBase::addExternalVariables()
 {
+  //Add the displacement variables on the mesh mirror
     InputParameters var_params = _factory.getValidParams("MooseVariable");
     var_params.set<MooseEnum>("family") = "LAGRANGE";
     var_params.set<MooseEnum>("order") = "FIRST";
@@ -109,32 +107,28 @@ DiabloProblemBase::extractOutputs()
     int ierr;
     int ivar = 2;  //Currently hardcoded for displacement
     _n_vertices_per_elem = 4;
-    //int node_index[4] ={0,1,3,2};
     int node_index[4] ={0,1,2,3};
     int components_per_point = 3;
 
     int _numNodeIds = _diablo_mesh->numNodeIds();
     int _numElems = _diablo_mesh->numElems();
+
+    int _localNodeIds = _diablo_mesh->localNodeIds();
+    int _localElems = _diablo_mesh->localElems();
+
+    std::vector<int> proc_id = _diablo_mesh->processor_id();
+    std::vector<int> _globalNodeStart =_diablo_mesh->globalNodeStart();
     
     double *diabloVals;
-    diabloVals = new double[components_per_point*_numNodeIds];
-
-//    field::DiabloFieldEnum field_enum;
-//    field_enum = field::disp_x;
+    diabloVals = new double[components_per_point*_localNodeIds];
 
     ierr = Diablo_Transfer_Out(diabloVals,&_neumann_set,&ivar);
-
-    //just for debugging, remember to eventaully remove this for loop
-    for (int count =0; count<3*_numNodeIds;count+=3)
-    {
-      //std::cout<<"Displacement: " << diabloVals[count] << "," << diabloVals[count+1] << "," << diabloVals[count+2]<<std::endl;
-    }
 
     auto & solution = _aux->solution();
     auto sys_number = _aux->number();
     auto pid = _communicator.rank();
     //write the displacement into the MOOSE disp_x, disp_y, and disp_z
-    for (int e = 0; e < _numElems; e++)
+    for (unsigned int e = 0; e < _numElems; e++)
     {
       for (int build = 0; build < _diablo_mesh->nMoosePerDiablo(); ++build)
       {
@@ -143,25 +137,28 @@ DiabloProblemBase::extractOutputs()
         // distributed mesh
         if (!elem_ptr)
         {
-          libmesh_assert(!_nek_mesh->getMesh().is_serial());
+          libmesh_assert(!_diablo_mesh->getMesh().is_serial());
           continue;
         }
-        for (int n = 0; n < _n_vertices_per_elem; n++)
+        if (proc_id.at(e)==pid)
         {
-          auto node_ptr = elem_ptr->node_ptr(n);
-          //int node_start = (e * components_per_point*_n_vertices_per_elem/2) + node_index[n]*components_per_point; //DOUBLE CHECK THIS AT SOME POINT
-          int node_start = (e*4*components_per_point)+node_index[n]*components_per_point;
-          //Should probably make the next 6 lines not so stupidly hard-coded...but for now it works
-          auto dof_idx = node_ptr->dof_number(sys_number,_aux->getFieldVariable<Real>(0, "disp_x").number(), 0);
-          solution.set(dof_idx,diabloVals[node_start]);
-          dof_idx = node_ptr->dof_number(sys_number,_aux->getFieldVariable<Real>(0, "disp_y").number(), 0);
-          solution.set(dof_idx,diabloVals[node_start+1]);
-          dof_idx = node_ptr->dof_number(sys_number,_aux->getFieldVariable<Real>(0, "disp_z").number(), 0);
-          solution.set(dof_idx,diabloVals[node_start+2]);
+          for (int n = 0; n < _n_vertices_per_elem; n++)
+          {
+            auto node_ptr = elem_ptr->node_ptr(n);
+            int node_start = (e*4*components_per_point)+node_index[n]*components_per_point-_globalNodeStart.at(pid)*components_per_point;
+            //Copy the solution from the diablo array into the nodal values on the mesh mirror
+            auto dof_idx = node_ptr->dof_number(sys_number,_aux->getFieldVariable<Real>(0, "disp_x").number(), 0);
+            solution.set(dof_idx,diabloVals[node_start]);
+            dof_idx = node_ptr->dof_number(sys_number,_aux->getFieldVariable<Real>(0, "disp_y").number(), 0);
+            solution.set(dof_idx,diabloVals[node_start+1]);
+            dof_idx = node_ptr->dof_number(sys_number,_aux->getFieldVariable<Real>(0, "disp_z").number(), 0);
+            solution.set(dof_idx,diabloVals[node_start+2]);
+          }
         }
-      }
+      } 
     }
   freePointer(diabloVals);
+  solution.close();
 }
 
 void
@@ -205,7 +202,7 @@ DiabloProblemBase::syncSolutions(ExternalProblem::Direction direction)
       // extract the NekRS solution onto the mesh mirror, if specified
       extractOutputs();
 
-      if (_t_step == _num_steps+1) //I think this needs to be somewhere outside of external solve. Otherwise itll segfault on the last timestep when trying to copy the data from diablo onto the mesh mirror. THIS NEEDS TO BE _num_steps from the executioner, but I admittedly don't know how to get that yet
+      if (_t_step == _num_steps+1) 
       {
         int ierr;
         ierr = Diablo_Finalize( _t_step );

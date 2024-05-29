@@ -59,11 +59,21 @@ DiabloInitAction::act()
 
   //DR 7/5. This section is pretty hard coded compared to what it should be. Refer to FIVSIM for proper implementation.
   int size=1;
-  int nprocs=1;
+  //int nprocs=2;
+  int nprocs;
+  MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+
+  if( nprocs > 9 ) { size = 2; }
+  if( nprocs > 99 ) { size = 3; }
+  if( nprocs > 999 ) { size = 4; }
+  if( nprocs > 9999 ) { size = 5; }
+  if( nprocs > 99999 ) { size = 6; }
   newstring  =  new char[size+1]; // need space for '\0
   sprintf( newstring, "%u",nprocs); 
   argvDiablo[3] = new char [size+1]; 
   std::strcpy(argvDiablo[3], newstring);
+
+
 
   if (_axeflag)
   {

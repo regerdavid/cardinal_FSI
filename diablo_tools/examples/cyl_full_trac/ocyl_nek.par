@@ -1,0 +1,43 @@
+#[OCCA]
+#backend = CPU
+
+[GENERAL]
+#verbose = true
+polynomialOrder = 5
+startFrom = ocyl_nek0.rst
+stopAt = numSteps
+numSteps = 10000
+
+#dt = targetCFL = 1.7 + max = 2 + initial = 1e-4
+dt = 5e-3
+timeStepper = tombo2
+subCyclingSteps = 1
+
+writeInterval = 1000
+
+#regularization = hpfrt + nModes=2 + scalingCoeff=10
+
+#[MESH]
+#connectivityTol=0.02
+
+[MESH]
+#connectivityTol=0.02
+boundaryTypeMap = zeroValue,codedfixedValue,zeroValue,zeroGradient,zeroValue  #NOTE: Not sure if zerogradient is right, i basically just want there to be no BC on those faces for the mesha
+solver = pcg+block
+residualTol = 1e-7
+#solver = none
+
+[PRESSURE]
+residualTol = 1e-5
+#preconditioner = pmg+coarse
+#smootherType = chebyshev+jac
+initialGuess = projectionAconj+nVector=30
+
+[VELOCITY]
+boundaryTypeMap = inlet,inlet, outlet, sym, wall
+density = 1.0
+viscosity = -100.0
+residualTol = 1e-06
+
+[TEMPERATURE]
+solver = none

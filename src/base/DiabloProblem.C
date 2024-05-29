@@ -31,6 +31,7 @@ DiabloProblem::DiabloProblem(const InputParameters & params)
 void 
 DiabloProblem::addExternalVariables()
 {
+  //Add the variables to store the displacement and the tractions
   DiabloProblemBase::addExternalVariables();
   InputParameters var_params = _factory.getValidParams("MooseVariable");
   var_params.set<MooseEnum>("family") = "LAGRANGE";
@@ -57,19 +58,21 @@ DiabloProblem::sendTractionsToDiablo()
 {
     int ierr;
     int ivar = 2;  //Currently hardcoded for tractions
-    int _numElems;
     _n_vertices_per_elem = 4;
-    //int node_index[4] ={0,1,3,2};
     int node_index[4] ={0,1,2,3};
     int components_per_point = 6;
-    //Can probably make some functions in DiabloMesh.h and call them to get stuff like neumann set, etc (_diablo_mesh->getNeumannSet or something)
-    ierr = Diablo_Get_Num_NodeIds(&_numNodeIds,&_neumann_set,&ivar);
-
-    //_numElems = (_numNodeIds-2)/2;
-    _numElems = _numNodeIds/4;
-    double *diabloVals;
-    diabloVals = new double[components_per_point*_numNodeIds];
     
+    int _numNodeIds = _diablo_mesh->numNodeIds();
+    int _numElems = _diablo_mesh->numElems();
+
+    int _localNodeIds = _diablo_mesh->localNodeIds();
+    int _localElems = _diablo_mesh->localElems();
+    std::vector<int> proc_id = _diablo_mesh->processor_id();
+
+    std::vector<int> _globalNodeStart =_diablo_mesh->globalNodeStart();
+
+    double *diabloVals;
+    diabloVals = new double[components_per_point*_localNodeIds];
     auto & solution = _aux->solution();
     auto sys_number = _aux->number();
     auto pid = _communicator.rank();
@@ -83,37 +86,30 @@ DiabloProblem::sendTractionsToDiablo()
         // distributed mesh
         if (!elem_ptr)
         {
-          libmesh_assert(!_nek_mesh->getMesh().is_serial());
+          libmesh_assert(!_diablo_mesh->getMesh().is_serial());
           continue;
         }
-        for (int n = 0; n < _n_vertices_per_elem; n++)
+        if (proc_id.at(e)==pid)
         {
-          auto node_ptr = elem_ptr->node_ptr(n);
-          //int node_start = (e * components_per_point*_n_vertices_per_elem/2) + node_index[n]*components_per_point; //DOUBLE CHECK THIS AT SOME POINT
-          int node_start = (e*4*components_per_point)+node_index[n]*components_per_point;
-          auto dof_idx = node_ptr->dof_number(sys_number, _s11_var, 0);
-          diabloVals[node_start] = (*_serialized_solution)(dof_idx);
-          dof_idx = node_ptr->dof_number(sys_number, _s22_var, 0);
-          diabloVals[node_start+1] = (*_serialized_solution)(dof_idx);
-          dof_idx = node_ptr->dof_number(sys_number, _s33_var, 0);
-          diabloVals[node_start+2] = (*_serialized_solution)(dof_idx);
-          dof_idx = node_ptr->dof_number(sys_number, _s12_var, 0);
-          diabloVals[node_start+3] = (*_serialized_solution)(dof_idx);
-          dof_idx = node_ptr->dof_number(sys_number, _s13_var, 0);
-          diabloVals[node_start+4] = (*_serialized_solution)(dof_idx);
-          dof_idx = node_ptr->dof_number(sys_number, _s23_var, 0);
-          diabloVals[node_start+5] = (*_serialized_solution)(dof_idx);
-          /*
-          for (int i = 0; i<6; i++)
+          for (int n = 0; n < _n_vertices_per_elem; n++)
           {
-            if (i==1)
-              diabloVals[node_start+i] = -10.0;
-            else
-            {}
-              diabloVals[node_start+i] = 0.0;
-          }*/
+            auto node_ptr = elem_ptr->node_ptr(n);
+            int node_start = (e*4*components_per_point)+node_index[n]*components_per_point-_globalNodeStart.at(pid)*components_per_point;
+            //Store the nodal values on the mesh mirror into the diabloVals array
+            auto dof_idx = node_ptr->dof_number(sys_number, _s11_var, 0);
+            diabloVals[node_start] = (*_serialized_solution)(dof_idx);
+            dof_idx = node_ptr->dof_number(sys_number, _s22_var, 0);
+            diabloVals[node_start+1] = (*_serialized_solution)(dof_idx);
+            dof_idx = node_ptr->dof_number(sys_number, _s33_var, 0);
+            diabloVals[node_start+2] = (*_serialized_solution)(dof_idx);
+            dof_idx = node_ptr->dof_number(sys_number, _s12_var, 0);
+            diabloVals[node_start+3] = (*_serialized_solution)(dof_idx);
+            dof_idx = node_ptr->dof_number(sys_number, _s13_var, 0);
+            diabloVals[node_start+4] = (*_serialized_solution)(dof_idx);
+            dof_idx = node_ptr->dof_number(sys_number, _s23_var, 0);
+            diabloVals[node_start+5] = (*_serialized_solution)(dof_idx);
 
-          //std::cout<<"TEST: " << _traction_var(ndof_idx) << std::endl;
+          }
         }
       }
     }
@@ -124,6 +120,7 @@ DiabloProblem::sendTractionsToDiablo()
     //  std::cout<<"6 traction components are " << diabloVals[count] << "," << diabloVals[count+1] << "," << diabloVals[count+2]<<"," << diabloVals[count+3]<<"," << diabloVals[count+4] << "," << diabloVals[count+5]<<std::endl;
     }
 
+    //Send the diabloVals array into Diablo
     ierr = Diablo_Transfer_In(diabloVals,&_neumann_set,&ivar);
 
 }

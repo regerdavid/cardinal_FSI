@@ -404,7 +404,7 @@ NekRSProblemBase::fillAuxVariable(const unsigned int var_number, const double * 
   auto & solution = _aux->solution();
   auto sys_number = _aux->number();
   auto pid = _communicator.rank();
-
+  
   for (unsigned int e = 0; e < _nek_mesh->numElems(); e++)
   {
     for (int build = 0; build < _nek_mesh->nMoosePerNek(); ++build)

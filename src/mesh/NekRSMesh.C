@@ -632,7 +632,7 @@ NekRSMesh::addElems()
 {
   BoundaryInfo & boundary_info = _mesh->get_boundary_info();
   auto nested_elems_on_face = nekrs::nestedElementsOnFace(_nek_polynomial_order);
-
+  std::cout<<_n_elems<<std::endl;
   for (int e = 0; e < _n_elems; e++)
   {
     for (int build = 0; build < _n_moose_per_nek; ++build)
@@ -641,7 +641,6 @@ NekRSMesh::addElems()
       elem->set_id() = e * _n_moose_per_nek + build;
       elem->processor_id() = (this->*_elem_processor_id)(e);
       _mesh->add_elem(elem);
-
       // add one point for each vertex of the face element
       for (int n = 0; n < _n_vertices_per_elem; n++)
       {
